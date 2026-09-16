@@ -9,6 +9,8 @@ import os
 import re
 import subprocess
 
+from .errors import SyncError
+
 MINIMUM_VERSION = (0, 13, 2)
 FALLBACK_COLOR = "#9e9e9e"
 MAX_PAGES = 50
@@ -16,7 +18,7 @@ MAX_PAGES = 50
 _VERSION = re.compile(r"(\d+)\.(\d+)\.(\d+)")
 
 
-class GwsError(Exception):
+class GwsError(SyncError):
     """Base class for every failure this adapter reports."""
 
 
@@ -42,6 +44,8 @@ def _subprocess_runner(argv, env):
 
 
 class Gws:
+    SOURCE_NAME = "gws"
+
     def __init__(self, profile, runner=None, binary="gws"):
         self.profile = str(profile)
         self.binary = str(binary or "gws")
@@ -141,3 +145,11 @@ class Gws:
             raise GwsApiError(f"{error_code}: {message}")
 
         return payload
+
+    def auth_hint(self, cfg):
+        return (
+            "if this is an auth error, run: "
+            "GOOGLE_WORKSPACE_CLI_CONFIG_DIR=" + str(cfg["profile"]) + " "
+            "gws auth login --scopes "
+            "https://www.googleapis.com/auth/calendar.readonly"
+        )

@@ -36,7 +36,8 @@ time away for an event title would be a downgrade you pay for all day.
 ## Requirements
 
 Omarchy 4 with Quickshell. Google Calendar is optional, see
-[Use another source](#use-another-source).
+[Use another source](#use-another-source). A Google Cloud project is optional
+too, see [Sync without a Google Cloud project](#sync-without-a-google-cloud-project).
 
 ## Install
 
@@ -112,6 +113,78 @@ Two of those steps are traps, and the script says so at the time:
 
 When it finishes, events land in `~/.local/state/omarchy/calendar-events.json`
 every five minutes and the widget picks them up without a restart.
+
+## Sync without a Google Cloud project
+
+The setup above needs a Google Cloud project because `calendar.readonly` is a
+Google *sensitive* scope, so a publicly distributed client would need
+verification. There is a way around that: read the calendars out of
+**Evolution Data Server**, which signs in with GNOME's already-verified OAuth
+client. No project, no consent screen, no scope declaration, no
+`client_secret.json`, and no Testing-mode refresh token expiring after seven
+days — just a browser sign-in.
+
+The trade is roughly 20 packages, and a GUI is needed once to sign in.
+
+```bash
+sudo pacman -S evolution-data-server evolution
+```
+
+Describe the account in `~/.config/evolution/sources/google.source`:
+
+```ini
+[Data Source]
+DisplayName=Google (you@example.com)
+Enabled=true
+Parent=
+
+[Collection]
+BackendName=google
+Identity=you@example.com
+CalendarEnabled=true
+ContactsEnabled=false
+MailEnabled=false
+
+[Authentication]
+Method=Google
+User=you@example.com
+Host=www.google.com
+RememberPassword=true
+```
+
+Writing that by hand is not laziness either. Evolution's Collection Account
+wizard resolves a custom Workspace domain to Google's *mail* servers and then
+asks for a password to discover CalDAV, rather than reusing the Google OAuth2
+provider it already ships — so it offers no calendar at all and the wizard is
+a dead end. The file skips it.
+
+Then sign in once:
+
+```bash
+evolution -c calendar
+```
+
+Its credential prompter opens Google's sign-in, EDS discovers the calendars
+over CalDAV, and the refresh token goes to your keyring. Evolution is not
+needed again unless Google later wants a re-auth and needs a window to ask in;
+the data server keeps running headless.
+
+Finally point the sync at it in `~/.config/omarchy/calendar-sync.json`:
+
+```json
+{
+  "backend": "eds",
+  "identity": "you@example.com"
+}
+```
+
+`identity` is the address whose invitation answers count as yours, which is
+what makes "hide declined events" work. Leave it out and `responseStatus` is
+left unset rather than guessed from the first attendee.
+
+The same systemd timer drives it, `calendars.include`/`exclude` and `window`
+behave identically, and the file written is the same contract — so switching
+backends changes nothing the widget can see.
 
 ## Use another source
 

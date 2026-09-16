@@ -12,6 +12,12 @@ from pathlib import Path
 CONFIG_PATH = Path.home() / ".config" / "omarchy" / "calendar-sync.json"
 
 DEFAULTS = {
+    # "gws" reads Google directly and needs a Google Cloud project;
+    # "eds" reads Evolution Data Server and needs none. See the README.
+    "backend": "gws",
+    # eds only: the address whose invitation answers count as "yours".
+    # Blank means responseStatus is left unset rather than guessed.
+    "identity": "",
     "profile": str(Path.home() / ".config" / "gws-omarchy-calendar"),
     # Resolved to an absolute path by sync/setup. A systemd user service
     # does not inherit an interactive shell PATH, so relying on the bare
