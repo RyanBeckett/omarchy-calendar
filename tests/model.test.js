@@ -425,3 +425,27 @@ test('commandPathFromUrl does not shorten a home-lookalike prefix', () => {
     '/home/tmn2/plugin/sync/setup'
   )
 })
+
+const AT = (iso) => Date.parse(iso)
+
+const DAY = [
+  { id: 'hol', allDay: true, start: '2026-09-17', end: '2026-09-18' },
+  { id: 'a', allDay: false, start: '2026-09-17T10:30:00+01:00', end: '2026-09-17T11:30:00+01:00' },
+  { id: 'b', allDay: false, start: '2026-09-17T12:30:00+01:00', end: '2026-09-17T13:00:00+01:00' }
+]
+
+test('eventPhase splits past, now and later', () => {
+  const now = AT('2026-09-17T11:00:00+01:00')
+  assert.deepEqual(DAY.map(e => Model.eventPhase(e, now)), ['later', 'now', 'later'])
+  assert.equal(Model.eventPhase(DAY[1], AT('2026-09-17T11:30:00+01:00')), 'past')
+})
+
+test('nowLineIndex sits above the first event not yet started', () => {
+  assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T09:00:00+01:00')), 1)
+  assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T11:00:00+01:00')), 2)
+})
+
+test('nowLineIndex goes after the last row once the day is done', () => {
+  assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T18:00:00+01:00')), 3)
+  assert.equal(Model.nowLineIndex([], 0), 0)
+})
