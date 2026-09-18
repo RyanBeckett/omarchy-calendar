@@ -186,7 +186,6 @@ Panel {
   // what a countdown needs. `today` deliberately only moves at midnight.
   property date nowTick: new Date()
   readonly property var upcomingEvent: Model.nextEventToday(visibleEventList, nowTick.getTime(), todayKey)
-  readonly property string upcomingCountdown: Model.formatCountdown(Model.millisUntil(upcomingEvent, nowTick.getTime())) || ""
 
   // The year and life bars are the upstream clock's, kept but opt-in. What
   // most people want in that slot is what is coming up next, not how much of
@@ -593,7 +592,7 @@ Panel {
           //      a plain hairline said nothing, and whole days done
           //      over days in the year says the same thing louder.
           Item {
-            visible: !root.settingsOpen
+            visible: !root.settingsOpen && (root.showYearProgress || root.editingLife)
             width: parent.width
             height: yearBlock.y + yearBlock.height
 
@@ -607,46 +606,6 @@ Panel {
               TapHandler {
                 enabled: root.showYearProgress && !root.editingLife
                 onDoubleTapped: root.startEditingLife()
-              }
-
-              // ---- What is coming up, in the slot the year bar used to own.
-              //      Reads as a sentence rather than a gauge, because the
-              //      answer people want here is "what next", not "how far in".
-              Row {
-                visible: !root.showYearProgress
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Style.space(4)
-
-                Rectangle {
-                  anchors.verticalCenter: parent.verticalCenter
-                  visible: root.upcomingEvent !== null
-                  width: Style.space(4)
-                  height: width
-                  radius: width / 2
-                  color: root.upcomingEvent ? root.upcomingEvent.color : "transparent"
-                }
-
-                Text {
-                  anchors.verticalCenter: parent.verticalCenter
-                  width: parent.width - Style.space(70)
-                  text: root.upcomingEvent ? root.upcomingEvent.title : qsTr("Nothing else today")
-                  color: root.upcomingEvent
-                    ? root.contentForeground
-                    : Qt.darker(root.contentForeground, 1.9)
-                  font.family: root.contentFontFamily
-                  font.pixelSize: Style.font.bodySmall
-                  elide: Text.ElideRight
-                }
-
-                Text {
-                  anchors.verticalCenter: parent.verticalCenter
-                  text: root.upcomingCountdown
-                  color: Qt.darker(root.contentForeground, 1.4)
-                  font.family: root.contentFontFamily
-                  font.pixelSize: Style.font.bodySmall
-                }
               }
 
               Row {
@@ -1187,11 +1146,30 @@ Panel {
                   }
                 }
 
+                // "in 36min" on the next event, "25min left" on the one under
+                // way. On the row rather than in a line of its own, so it is
+                // never in doubt which event it counts to.
+                Text {
+                  id: rowTimer
+                  visible: text !== "" && !eventRow.declined
+                  anchors.right: eventRow.joinable ? joinButton.left : parent.right
+                  anchors.rightMargin: eventRow.joinable ? Style.space(4) : Style.space(2)
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: Model.rowTimer(eventRow.modelData, root.upcomingEvent, root.nowTick.getTime())
+                  color: eventRow.phase === "now"
+                    ? Color.accent
+                    : Qt.darker(root.contentForeground, 1.4)
+                  font.family: root.contentFontFamily
+                  font.pixelSize: Style.font.caption
+                }
+
                 Row {
                   id: eventBody
                   anchors.left: parent.left
-                  anchors.right: eventRow.joinable ? joinButton.left : parent.right
-                  anchors.rightMargin: eventRow.joinable ? Style.space(3) : 0
+                  anchors.right: rowTimer.visible
+                    ? rowTimer.left
+                    : (eventRow.joinable ? joinButton.left : parent.right)
+                  anchors.rightMargin: rowTimer.visible || eventRow.joinable ? Style.space(3) : 0
                   anchors.verticalCenter: parent.verticalCenter
                   spacing: Style.space(4)
                   opacity: eventRow.phase === "past" ? 0.45 : 1

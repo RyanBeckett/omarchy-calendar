@@ -449,3 +449,27 @@ test('nowLineIndex goes after the last row once the day is done', () => {
   assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T18:00:00+01:00')), 3)
   assert.equal(Model.nowLineIndex([], 0), 0)
 })
+
+test('rowTimer counts down to the next event only', () => {
+  const now = AT('2026-09-17T09:24:00+01:00')
+  assert.equal(Model.rowTimer(DAY[1], DAY[1], now), 'in 1h 6min')
+  assert.equal(Model.rowTimer(DAY[2], DAY[1], now), '')
+  assert.equal(Model.rowTimer(DAY[0], DAY[1], now), '')
+})
+
+test('rowTimer shows time left in a meeting under way, and nothing once past', () => {
+  assert.equal(Model.rowTimer(DAY[1], DAY[2], AT('2026-09-17T11:05:00+01:00')), '25min left')
+  assert.equal(Model.rowTimer(DAY[1], DAY[2], AT('2026-09-17T12:00:00+01:00')), '')
+})
+
+test('rowTimer matches the next event by id, not by reference', () => {
+  const copy = Object.assign({}, DAY[1])
+  assert.equal(Model.rowTimer(DAY[1], copy, AT('2026-09-17T09:24:00+01:00')), 'in 1h 6min')
+})
+
+test('formatRemaining reads as time left, distinct from a countdown', () => {
+  assert.equal(Model.formatRemaining(25 * 60 * 1000), '25min left')
+  assert.equal(Model.formatRemaining(90 * 60 * 1000), '1h 30min left')
+  assert.equal(Model.formatRemaining(30 * 1000), 'ending')
+  assert.equal(Model.formatRemaining(-1), null)
+})
