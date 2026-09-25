@@ -77,14 +77,16 @@ class TestVersion(unittest.TestCase):
 
 
 class TestCalendars(unittest.TestCase):
-    def test_maps_to_id_name_color(self):
+    def test_maps_to_id_name_color_primary(self):
         client = gws.Gws("/tmp/profile", runner=FakeRunner({"calendarList": (0, fixture("google-calendars.json"), "keyring noise")}))
         calendars = client.calendars()
+        # Only the primary calendar carries "primary" in calendarList, so a
+        # missing field means False.
         self.assertEqual(
             calendars,
             [
-                {"id": "a@example.com", "name": "Personal", "color": "#f83a22"},
-                {"id": "b@example.com", "name": "Phases of the Moon", "color": "#fad165"},
+                {"id": "a@example.com", "name": "Personal", "color": "#f83a22", "primary": True},
+                {"id": "b@example.com", "name": "Phases of the Moon", "color": "#fad165", "primary": False},
             ],
         )
 
