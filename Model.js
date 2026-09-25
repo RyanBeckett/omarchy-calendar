@@ -472,6 +472,61 @@ function nextEventToday(events, nowMs, todayKey) {
   return nextEvent(todays, nowMs)
 }
 
+// Where an agenda row sits relative to now: "past", "now" or "later".
+// All-day events are always "later" -- dimming a birthday at 00:01 would
+// say it is over when it is the whole day.
+function eventPhase(event, nowMs) {
+  if (!event || event.allDay) return "later"
+  var startMs = Date.parse(event.start)
+  var endMs = Date.parse(event.end)
+  if (isNaN(startMs)) return "later"
+  if (isNaN(endMs) || endMs < startMs) endMs = startMs
+  if (endMs <= nowMs) return "past"
+  if (startMs <= nowMs) return "now"
+  return "later"
+}
+
+// The agenda row the "now" line is drawn above: the first timed event that
+// has not started. `events.length` means the line goes after the last row,
+// which is how a finished day still says where you are in it.
+function nowLineIndex(events, nowMs) {
+  var list = events || []
+  for (var i = 0; i < list.length; i++) {
+    var event = list[i]
+    if (!event || event.allDay) continue
+    var startMs = Date.parse(event.start)
+    if (!isNaN(startMs) && startMs > nowMs) return i
+  }
+  return list.length
+}
+
+// The timer on an agenda row: time left in a meeting under way, or the
+// countdown on the next one. Every other row gets nothing -- one countdown
+// is a prompt, a column of them is a timetable.
+function rowTimer(event, nextEvent, nowMs) {
+  var phase = eventPhase(event, nowMs)
+  if (phase === "now") return formatRemaining(Date.parse(event.end) - nowMs) || ""
+  // By id, not identity: QML hands the agenda and the next-event lookup
+  // separate copies of the same row.
+  if (phase === "later" && event && nextEvent && event.id === nextEvent.id)
+    return formatCountdown(millisUntil(event, nowMs)) || ""
+  return ""
+}
+
+// Deliberately not symmetric with formatCountdown: "in 5min" and "5min left"
+// appear in the same slot, so they have to be told apart at a glance.
+function formatRemaining(deltaMs) {
+  if (deltaMs === null || isNaN(deltaMs) || deltaMs < 0 || deltaMs >= DAY_MS) return null
+  if (deltaMs < MINUTE_MS) return "ending"
+
+  var minutes = Math.floor(deltaMs / MINUTE_MS)
+  if (minutes < 60) return minutes + "min left"
+
+  var hours = Math.floor(minutes / 60)
+  var rest = minutes % 60
+  return rest === 0 ? hours + "h left" : hours + "h " + rest + "min left"
+}
+
 // Returns null past a day out, which is the caller's signal to show nothing
 // rather than a countdown nobody is acting on.
 function formatCountdown(deltaMs) {
@@ -593,7 +648,11 @@ if (typeof module !== "undefined") {
     calendarsInDocument: calendarsInDocument,
     nextEvent: nextEvent,
     nextEventToday: nextEventToday,
+    eventPhase: eventPhase,
+    nowLineIndex: nowLineIndex,
+    rowTimer: rowTimer,
     formatCountdown: formatCountdown,
+    formatRemaining: formatRemaining,
     truncateTitle: truncateTitle,
     announceLabel: announceLabel,
     millisUntil: millisUntil,

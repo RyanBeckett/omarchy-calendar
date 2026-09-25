@@ -46,6 +46,10 @@ class FakeGws:
     def events(self, calendar_id, time_min, time_max):
         if self._raises:
             raise self._raises
+        # A dict gives each calendar its own copy of an event; a list is
+        # returned for every calendar.
+        if isinstance(self._events, dict):
+            return self._events.get(calendar_id, [])
         return self._events
 
     def auth_hint(self, cfg):
@@ -268,3 +272,29 @@ class TestDeduplicationAcrossCalendars(unittest.TestCase):
             self.assertEqual(len(events), 1)
             # First calendar by name wins, so the surviving copy is stable.
             self.assertEqual(events[0]["calendarName"], "Alpha")
+
+    def test_the_primary_calendars_copy_wins_over_one_that_sorts_first(self):
+        # A colleague's calendar shared as free/busy returns the same
+        # occurrence with no title, and it sorts before yours by name.
+        start = "2026-08-10T19:15:00-05:00"
+        calendars = [
+            {"id": "alice@example.com", "name": "Alice", "color": "#f83a22"},
+            {"id": "me@example.com", "name": "me@example.com", "color": "#7bd148", "primary": True},
+        ]
+        copies = {
+            "alice@example.com": [gevent("shared@google.com", start, "")],
+            "me@example.com": [gevent("shared@google.com", start, "Impuestos")],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out.json"
+            cli.run(
+                FakeGws(calendars=calendars, events=copies),
+                config.DEFAULTS,
+                NOW,
+                out,
+                BOGOTA,
+            )
+            events = json.loads(out.read_text())["events"]
+            self.assertEqual(len(events), 1)
+            self.assertEqual(events[0]["calendarName"], "me@example.com")
+            self.assertEqual(events[0]["title"], "Impuestos")

@@ -55,7 +55,11 @@ remove the `omarchy.clock` entry from `bar.layout.center` and point
     "centerAnchor": "tmn73.calendar",
     "layout": {
       "center": [
-        { "id": "tmn73.calendar", "format": "dddd HH:mm" }
+        {
+          "id": "tmn73.calendar",
+          "format": "dddd HH:mm",
+          "eventTimeFormat": "HH:mm"
+        }
       ]
     }
   }
@@ -241,6 +245,12 @@ Rules a writer has to follow:
 
 `tests/fixtures/calendar-events.json` is a valid two-event file to start from.
 
+Writers other people have built:
+
+- [Thunderbird](https://gist.github.com/marijn070/413704a12a00f7501ab1d52dc08b9a4e)
+  by @marijn070. A Nushell script that reads Thunderbird's local calendar, so
+  every source you already aggregate in Thunderbird shows up in the widget.
+
 ## Settings
 
 Click the clock, then the gear icon in the panel header.
@@ -255,6 +265,7 @@ Click the clock, then the gear icon in the panel header.
 | Declined invitations | On lists them struck through, off hides them entirely |
 | Year and life progress | Brings back the built-in clock's bars, off by default |
 | Bar label | How early the bar announces what is next: never, 5, 15, 30 or 60 minutes |
+| Event times | Set `eventTimeFormat` in `shell.json` to a Qt date-time format such as `HH:mm` or `h:mm AP` |
 | Sync | Event count, source and last sync time, for diagnosing a quiet calendar |
 
 Hiding a calendar is instant and does not change what the sync fetches, so
@@ -287,6 +298,8 @@ systemctl --user list-timers omarchy-calendar-sync.timer
 | `403 insufficient scopes` | The calendar scope was never granted. Check `gws auth status`; if it only lists `openid` and `email`, declare the scope under Data Access in the console, then run `sync/setup` again |
 | `401 invalid_grant` | The refresh token expired. Almost always an app left in Testing, which caps refresh tokens at seven days. Publish it, then log in again |
 | `gws is not installed or not on PATH` from the timer, but it works in your terminal | `gwsPath` is not absolute. `sync/setup` writes it for you |
+| `cannot parse gws version` from the timer, with `exec: node: not found` | `gwsPath` is absolute but points at an npm wrapper that needs node on your shell PATH. With mise, use its shim: `~/.local/share/mise/shims/gws`. `sync/setup` checks this and records the shim for you |
+| `Not in a workspace` during setup, or setup says gws is not the Google Workspace CLI | Another program named `gws` comes first on your PATH, for example the git workspace helper. Pass the right one: `GWS=/absolute/path/to/gws sync/setup` |
 | The panel says "No calendar synced yet" | The events file does not exist. The sync has never completed |
 | The panel says the calendar may be out of date | The file exists but `syncedAt` is old. Check the journal above |
 | An event shows up twice | Two of your calendars both carry it. Hide one in settings. The sync already drops exact duplicates by iCalUID and start time |

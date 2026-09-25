@@ -425,3 +425,51 @@ test('commandPathFromUrl does not shorten a home-lookalike prefix', () => {
     '/home/tmn2/plugin/sync/setup'
   )
 })
+
+const AT = (iso) => Date.parse(iso)
+
+const DAY = [
+  { id: 'hol', allDay: true, start: '2026-09-17', end: '2026-09-18' },
+  { id: 'a', allDay: false, start: '2026-09-17T10:30:00+01:00', end: '2026-09-17T11:30:00+01:00' },
+  { id: 'b', allDay: false, start: '2026-09-17T12:30:00+01:00', end: '2026-09-17T13:00:00+01:00' }
+]
+
+test('eventPhase splits past, now and later', () => {
+  const now = AT('2026-09-17T11:00:00+01:00')
+  assert.deepEqual(DAY.map(e => Model.eventPhase(e, now)), ['later', 'now', 'later'])
+  assert.equal(Model.eventPhase(DAY[1], AT('2026-09-17T11:30:00+01:00')), 'past')
+})
+
+test('nowLineIndex sits above the first event not yet started', () => {
+  assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T09:00:00+01:00')), 1)
+  assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T11:00:00+01:00')), 2)
+})
+
+test('nowLineIndex goes after the last row once the day is done', () => {
+  assert.equal(Model.nowLineIndex(DAY, AT('2026-09-17T18:00:00+01:00')), 3)
+  assert.equal(Model.nowLineIndex([], 0), 0)
+})
+
+test('rowTimer counts down to the next event only', () => {
+  const now = AT('2026-09-17T09:24:00+01:00')
+  assert.equal(Model.rowTimer(DAY[1], DAY[1], now), 'in 1h 6min')
+  assert.equal(Model.rowTimer(DAY[2], DAY[1], now), '')
+  assert.equal(Model.rowTimer(DAY[0], DAY[1], now), '')
+})
+
+test('rowTimer shows time left in a meeting under way, and nothing once past', () => {
+  assert.equal(Model.rowTimer(DAY[1], DAY[2], AT('2026-09-17T11:05:00+01:00')), '25min left')
+  assert.equal(Model.rowTimer(DAY[1], DAY[2], AT('2026-09-17T12:00:00+01:00')), '')
+})
+
+test('rowTimer matches the next event by id, not by reference', () => {
+  const copy = Object.assign({}, DAY[1])
+  assert.equal(Model.rowTimer(DAY[1], copy, AT('2026-09-17T09:24:00+01:00')), 'in 1h 6min')
+})
+
+test('formatRemaining reads as time left, distinct from a countdown', () => {
+  assert.equal(Model.formatRemaining(25 * 60 * 1000), '25min left')
+  assert.equal(Model.formatRemaining(90 * 60 * 1000), '1h 30min left')
+  assert.equal(Model.formatRemaining(30 * 1000), 'ending')
+  assert.equal(Model.formatRemaining(-1), null)
+})
