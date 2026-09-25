@@ -37,8 +37,14 @@ Column {
   signal leadMinutesPicked(int minutes)
   signal setupCommandCopyRequested()
 
-  readonly property color muted: Qt.darker(foreground, 1.5)
-  readonly property color faint: Qt.darker(foreground, 1.9)
+  // Same fade as Panel.quiet(): Qt.darker only reads as quieter on a dark
+  // background, and on a light theme it raises contrast instead.
+  function quiet(amount) {
+    return Qt.rgba(foreground.r, foreground.g, foreground.b, amount)
+  }
+
+  readonly property color muted: quiet(0.68)
+  readonly property color faint: quiet(0.50)
 
   spacing: Style.space(10)
 
@@ -108,6 +114,9 @@ Column {
 
         Text {
           width: parent.width
+          // Calendar names come from the events file, so a shared calendar or
+          // a third-party writer chooses this string, not the plugin.
+          textFormat: Text.PlainText
           text: toggle.label
           color: toggle.checked ? root.foreground : root.muted
           font.family: root.fontFamily
@@ -220,7 +229,7 @@ Column {
           ? Qt.rgba(root.foreground.r, root.foreground.g, root.foreground.b, 0.14)
           : "transparent"
         border.width: Style.spacing.hairline
-        border.color: active ? root.muted : Qt.darker(root.foreground, 2.4)
+        border.color: active ? root.muted : root.quiet(0.36)
 
         Text {
           id: leadLabel
@@ -244,6 +253,8 @@ Column {
 
   Text {
     width: parent.width
+    // Concatenates sourceLabel, which is whatever wrote the events file.
+    textFormat: Text.PlainText
     color: root.syncState === "missing" && syncHover.hovered ? root.foreground : root.faint
     font.family: root.fontFamily
     font.pixelSize: Style.font.caption

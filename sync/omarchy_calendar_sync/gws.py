@@ -61,10 +61,16 @@ class Gws:
         return code, stdout, stderr
 
     def version(self):
-        _, stdout, _ = self._run(["--version"])
+        exit_code, stdout, stderr = self._run(["--version"])
         match = _VERSION.search(stdout)
         if not match:
-            raise GwsApiError(f"cannot parse gws version from {stdout!r}")
+            # A gws that exists but cannot start (a wrapper that execs node,
+            # under a PATH without node) prints nothing to stdout. The reason
+            # is only on stderr, so quote it.
+            excerpt = stderr.strip()[:200] or "no stderr output"
+            raise GwsApiError(
+                f"cannot parse gws version from {stdout!r} (exit {exit_code}: {excerpt})"
+            )
         return tuple(int(part) for part in match.groups())
 
     def check(self):
@@ -79,8 +85,14 @@ class Gws:
         calendars = [
             {
                 "id": item["id"],
-                "name": item.get("summary") or item["id"],
+                # A renamed subscription (ICS feeds especially, whose
+                # summary is whatever the feed called itself) keeps the
+                # user's name in summaryOverride, so prefer that.
+                "name": item.get("summaryOverride")
+                or item.get("summary")
+                or item["id"],
                 "color": item.get("backgroundColor") or FALLBACK_COLOR,
+                "primary": item.get("primary") is True,
             }
             for item in payload.get("items", [])
         ]
