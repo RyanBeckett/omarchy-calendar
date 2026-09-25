@@ -500,6 +500,33 @@ function nowLineIndex(events, nowMs) {
   return list.length
 }
 
+// The timer on an agenda row: time left in a meeting under way, or the
+// countdown on the next one. Every other row gets nothing -- one countdown
+// is a prompt, a column of them is a timetable.
+function rowTimer(event, nextEvent, nowMs) {
+  var phase = eventPhase(event, nowMs)
+  if (phase === "now") return formatRemaining(Date.parse(event.end) - nowMs) || ""
+  // By id, not identity: QML hands the agenda and the next-event lookup
+  // separate copies of the same row.
+  if (phase === "later" && event && nextEvent && event.id === nextEvent.id)
+    return formatCountdown(millisUntil(event, nowMs)) || ""
+  return ""
+}
+
+// Deliberately not symmetric with formatCountdown: "in 5min" and "5min left"
+// appear in the same slot, so they have to be told apart at a glance.
+function formatRemaining(deltaMs) {
+  if (deltaMs === null || isNaN(deltaMs) || deltaMs < 0 || deltaMs >= DAY_MS) return null
+  if (deltaMs < MINUTE_MS) return "ending"
+
+  var minutes = Math.floor(deltaMs / MINUTE_MS)
+  if (minutes < 60) return minutes + "min left"
+
+  var hours = Math.floor(minutes / 60)
+  var rest = minutes % 60
+  return rest === 0 ? hours + "h left" : hours + "h " + rest + "min left"
+}
+
 // Returns null past a day out, which is the caller's signal to show nothing
 // rather than a countdown nobody is acting on.
 function formatCountdown(deltaMs) {
@@ -623,7 +650,9 @@ if (typeof module !== "undefined") {
     nextEventToday: nextEventToday,
     eventPhase: eventPhase,
     nowLineIndex: nowLineIndex,
+    rowTimer: rowTimer,
     formatCountdown: formatCountdown,
+    formatRemaining: formatRemaining,
     truncateTitle: truncateTitle,
     announceLabel: announceLabel,
     millisUntil: millisUntil,
