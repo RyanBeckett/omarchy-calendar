@@ -168,6 +168,12 @@ Rules a writer has to follow:
 
 `tests/fixtures/calendar-events.json` is a valid two-event file to start from.
 
+Writers other people have built:
+
+- [Thunderbird](https://gist.github.com/marijn070/413704a12a00f7501ab1d52dc08b9a4e)
+  by @marijn070. A Nushell script that reads Thunderbird's local calendar, so
+  every source you already aggregate in Thunderbird shows up in the widget.
+
 ## Settings
 
 Click the clock, then the gear icon in the panel header.
