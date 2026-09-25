@@ -65,16 +65,28 @@ class TestVersion(unittest.TestCase):
         client = gws.Gws("/tmp/profile", runner=FakeRunner({"--version": (0, "gws 0.13.2\n", "")}))
         client.check()
 
+    def test_unparseable_version_names_exit_code_and_stderr(self):
+        # A wrapper that cannot find node under systemd's PATH exits 127 with
+        # nothing on stdout. The reason is only on stderr.
+        stderr = ".bin/gws: line 18: exec: node: not found\n"
+        client = gws.Gws("/tmp/profile", runner=FakeRunner({"--version": (127, "", stderr)}))
+        with self.assertRaises(gws.GwsApiError) as caught:
+            client.version()
+        self.assertIn("exit 127", str(caught.exception))
+        self.assertIn("exec: node: not found", str(caught.exception))
+
 
 class TestCalendars(unittest.TestCase):
-    def test_maps_to_id_name_color(self):
+    def test_maps_to_id_name_color_primary(self):
         client = gws.Gws("/tmp/profile", runner=FakeRunner({"calendarList": (0, fixture("google-calendars.json"), "keyring noise")}))
         calendars = client.calendars()
+        # Only the primary calendar carries "primary" in calendarList, so a
+        # missing field means False.
         self.assertEqual(
             calendars,
             [
-                {"id": "a@example.com", "name": "Personal", "color": "#f83a22"},
-                {"id": "b@example.com", "name": "Phases of the Moon", "color": "#fad165"},
+                {"id": "a@example.com", "name": "Personal", "color": "#f83a22", "primary": True},
+                {"id": "b@example.com", "name": "Phases of the Moon", "color": "#fad165", "primary": False},
             ],
         )
 
@@ -82,6 +94,11 @@ class TestCalendars(unittest.TestCase):
         body = json.dumps({"items": [{"id": "x", "summary": "No Color"}]})
         client = gws.Gws("/tmp/profile", runner=FakeRunner({"calendarList": (0, body, "")}))
         self.assertEqual(client.calendars()[0]["color"], gws.FALLBACK_COLOR)
+
+    def test_summary_override_wins_over_summary(self):
+        body = json.dumps({"items": [{"id": "x@import.calendar.google.com", "summary": "Calendar", "summaryOverride": "Fastell Calendar"}]})
+        client = gws.Gws("/tmp/profile", runner=FakeRunner({"calendarList": (0, body, "")}))
+        self.assertEqual(client.calendars()[0]["name"], "Fastell Calendar")
 
     def test_missing_summary_falls_back_to_id(self):
         body = json.dumps({"items": [{"id": "x@example.com", "backgroundColor": "#ffffff"}]})

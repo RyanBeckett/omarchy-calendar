@@ -113,8 +113,9 @@ def occurrence_key(gevent):
 def _drop_duplicates(gevents, seen):
     """Filter events already seen in an earlier calendar. Mutates `seen`.
 
-    First occurrence wins. Calendars arrive sorted by name, so which copy
-    survives is stable across runs rather than depending on Google's order.
+    First occurrence wins. The primary calendar goes first and the rest
+    follow by name, so which copy survives is stable across runs rather than
+    depending on Google's order.
     """
     fresh = []
     for gevent in gevents:
@@ -132,6 +133,11 @@ def run(client, cfg, now, out_path, local_tz):
     try:
         client.check()
         calendars = config_module.select_calendars(client.calendars(), cfg)
+        # Your own copy of a shared event carries your title, colour and
+        # answer. A colleague's copy can carry none of them (a calendar shared
+        # as free/busy has no titles), so the primary calendar wins the
+        # dedup. The sort is stable, so the rest keep their name order.
+        calendars.sort(key=lambda calendar: not calendar.get("primary"))
         time_min, time_max = config_module.window_bounds(cfg, now)
 
         rows = []
