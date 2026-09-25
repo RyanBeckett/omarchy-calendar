@@ -97,6 +97,51 @@ Panel {
   readonly property date selectedDate: Model.dateFromKey(selectedDayKey, today)
   readonly property string eventTimeFormat: String(setting("eventTimeFormat", "HH:mm") || "HH:mm")
 
+  // Where "now" falls in the listed day. -1 on any other day: a line on
+  // yesterday's agenda would claim a position it does not have.
+  readonly property int nowLineIndex: selectedDayKey === todayKey
+    ? Model.nowLineIndex(selectedEvents, nowTick.getTime())
+    : -1
+
+  // The agenda's "now" marker: a dot on the rail, the time in the time
+  // column, and a hairline across the rest. Its own component because it
+  // appears both above a row and after the last one.
+  component NowLine: Row {
+    property color accent
+    property string fontFamily
+    property int railWidth
+    property int timeWidth
+    property string timeFormat: "HH:mm"
+    property int columnSpacing
+    property date now
+
+    spacing: columnSpacing
+
+    Rectangle {
+      width: railWidth * 3
+      height: width
+      radius: width / 2
+      anchors.verticalCenter: parent.verticalCenter
+      color: accent
+    }
+
+    Text {
+      width: timeWidth - railWidth * 2
+      text: Qt.formatDateTime(now, timeFormat)
+      color: accent
+      font.family: fontFamily
+      font.pixelSize: Style.font.caption
+      font.bold: true
+    }
+
+    Rectangle {
+      width: parent.width - railWidth - timeWidth - columnSpacing * 2
+      height: Style.spacing.hairline
+      anchors.verticalCenter: parent.verticalCenter
+      color: accent
+    }
+  }
+
   function selectDay(key) {
     root.selectedDayKey = String(key)
   }
@@ -1125,12 +1170,35 @@ Panel {
             Repeater {
               model: root.selectedEvents
 
+              Column {
+                id: agendaEntry
+                required property var modelData
+                required property int index
+
+                width: gridColumn.width
+                spacing: Style.space(4)
+
+                NowLine {
+                  visible: agendaEntry.index === root.nowLineIndex
+                  width: parent.width
+                  accent: Color.accent
+                  fontFamily: root.contentFontFamily
+                  railWidth: Style.space(2)
+                  timeWidth: root.eventTimeColumnWidth
+                  timeFormat: root.eventTimeFormat
+                  columnSpacing: Style.space(4)
+                  now: root.nowTick
+                }
+
               // The hover wash lives on this wrapper, never inside the Row. A
               // Row lays out every visible child, so an anchored background
               // added as a Row child fights the layout and ejects the content.
               Rectangle {
                 id: eventRow
-                required property var modelData
+                readonly property var modelData: agendaEntry.modelData
+                // Past rows fade, the one you are in is washed, so the list
+                // reads as a timeline and not just a list.
+                readonly property string phase: Model.eventPhase(modelData, root.nowTick.getTime())
 
                 readonly property string meetingUrl: Model.meetingUrlFor(modelData)
                 readonly property bool declined: Model.isDeclined(modelData)
@@ -1146,7 +1214,9 @@ Panel {
                 color: eventHover.hovered
                   ? Qt.rgba(root.contentForeground.r, root.contentForeground.g,
                             root.contentForeground.b, 0.08)
-                  : "transparent"
+                  : eventRow.phase === "now"
+                    ? Qt.rgba(Color.accent.r, Color.accent.g, Color.accent.b, 0.10)
+                    : "transparent"
 
                 // Only rows that can actually do something respond to a click.
                 HoverHandler {
@@ -1200,6 +1270,7 @@ Panel {
                   anchors.rightMargin: eventRow.joinable ? Style.space(3) : 0
                   anchors.verticalCenter: parent.verticalCenter
                   spacing: Style.space(4)
+                  opacity: eventRow.phase === "past" ? 0.45 : 1
 
                   // Deliberately here and not on the row: this stops at the
                   // Join button's left edge, so the two hit areas cannot
@@ -1225,7 +1296,9 @@ Panel {
                   text: eventRow.modelData.allDay
                     ? qsTr("All day")
                     : Qt.formatDateTime(new Date(eventRow.modelData.start), root.eventTimeFormat)
-                  color: root.quiet(eventRow.declined ? 0.40 : 0.68)
+                  color: eventRow.phase === "now" && !eventRow.declined
+                    ? Color.accent
+                    : root.quiet(eventRow.declined ? 0.40 : 0.68)
                   font.family: root.contentFontFamily
                   font.pixelSize: Style.font.bodySmall
                   font.strikeout: eventRow.declined
@@ -1266,6 +1339,22 @@ Panel {
                 }
                 }
               }
+              }
+            }
+
+            // After the last row once the day's events are all under way or
+            // done -- the case where the list alone says least about the time.
+            NowLine {
+              visible: root.selectedEvents.length > 0
+                && root.nowLineIndex === root.selectedEvents.length
+              width: parent.width
+              accent: Color.accent
+              fontFamily: root.contentFontFamily
+              railWidth: Style.space(2)
+              timeWidth: root.eventTimeColumnWidth
+              timeFormat: root.eventTimeFormat
+              columnSpacing: Style.space(4)
+              now: root.nowTick
             }
 
             // An empty day and a sync that never ran look identical unless

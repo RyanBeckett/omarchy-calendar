@@ -472,6 +472,34 @@ function nextEventToday(events, nowMs, todayKey) {
   return nextEvent(todays, nowMs)
 }
 
+// Where an agenda row sits relative to now: "past", "now" or "later".
+// All-day events are always "later" -- dimming a birthday at 00:01 would
+// say it is over when it is the whole day.
+function eventPhase(event, nowMs) {
+  if (!event || event.allDay) return "later"
+  var startMs = Date.parse(event.start)
+  var endMs = Date.parse(event.end)
+  if (isNaN(startMs)) return "later"
+  if (isNaN(endMs) || endMs < startMs) endMs = startMs
+  if (endMs <= nowMs) return "past"
+  if (startMs <= nowMs) return "now"
+  return "later"
+}
+
+// The agenda row the "now" line is drawn above: the first timed event that
+// has not started. `events.length` means the line goes after the last row,
+// which is how a finished day still says where you are in it.
+function nowLineIndex(events, nowMs) {
+  var list = events || []
+  for (var i = 0; i < list.length; i++) {
+    var event = list[i]
+    if (!event || event.allDay) continue
+    var startMs = Date.parse(event.start)
+    if (!isNaN(startMs) && startMs > nowMs) return i
+  }
+  return list.length
+}
+
 // Returns null past a day out, which is the caller's signal to show nothing
 // rather than a countdown nobody is acting on.
 function formatCountdown(deltaMs) {
@@ -593,6 +621,8 @@ if (typeof module !== "undefined") {
     calendarsInDocument: calendarsInDocument,
     nextEvent: nextEvent,
     nextEventToday: nextEventToday,
+    eventPhase: eventPhase,
+    nowLineIndex: nowLineIndex,
     formatCountdown: formatCountdown,
     truncateTitle: truncateTitle,
     announceLabel: announceLabel,
