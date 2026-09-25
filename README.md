@@ -120,13 +120,17 @@ every five minutes and the widget picks them up without a restart.
 
 ## Sync without a Google Cloud project
 
+> **Community-maintained.** The author does not run Evolution Data Server, so
+> the people who use this backend are the ones who test it. When you open an
+> issue about it, say that you are on the EDS backend.
+
 The setup above needs a Google Cloud project because `calendar.readonly` is a
 Google *sensitive* scope, so a publicly distributed client would need
 verification. There is a way around that: read the calendars out of
 **Evolution Data Server**, which signs in with GNOME's already-verified OAuth
 client. No project, no consent screen, no scope declaration, no
 `client_secret.json`, and no Testing-mode refresh token expiring after seven
-days — just a browser sign-in.
+days. Just a browser sign-in.
 
 The trade is roughly 20 packages, and a GUI is needed once to sign in.
 
@@ -159,8 +163,8 @@ RememberPassword=true
 Writing that by hand is not laziness either. Evolution's Collection Account
 wizard resolves a custom Workspace domain to Google's *mail* servers and then
 asks for a password to discover CalDAV, rather than reusing the Google OAuth2
-provider it already ships — so it offers no calendar at all and the wizard is
-a dead end. The file skips it.
+provider it already ships. It offers no calendar at all, and the wizard is a
+dead end. The file skips it.
 
 Then sign in once:
 
@@ -187,8 +191,11 @@ what makes "hide declined events" work. Leave it out and `responseStatus` is
 left unset rather than guessed from the first attendee.
 
 The same systemd timer drives it, `calendars.include`/`exclude` and `window`
-behave identically, and the file written is the same contract — so switching
+behave identically, and the file written is the same contract, so switching
 backends changes nothing the widget can see.
+
+One known limit: clicking an event opens nothing on this backend, because
+CalDAV does not carry Google's link to the event.
 
 ## Use another source
 
