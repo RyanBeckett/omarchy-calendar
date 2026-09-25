@@ -108,6 +108,9 @@ Column {
 
         Text {
           width: parent.width
+          // Calendar names come from the events file, so a shared calendar or
+          // a third-party writer chooses this string, not the plugin.
+          textFormat: Text.PlainText
           text: toggle.label
           color: toggle.checked ? root.foreground : root.muted
           font.family: root.fontFamily
@@ -244,6 +247,8 @@ Column {
 
   Text {
     width: parent.width
+    // Concatenates sourceLabel, which is whatever wrote the events file.
+    textFormat: Text.PlainText
     color: root.syncState === "missing" && syncHover.hovered ? root.foreground : root.faint
     font.family: root.fontFamily
     font.pixelSize: Style.font.caption
