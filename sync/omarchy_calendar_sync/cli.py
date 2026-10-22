@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import config as config_module
 from . import contract, normalize, suggestions
+from .caldir import Caldir
 from .eds import Eds
 from .errors import SyncError
 from .gws import Gws
@@ -149,8 +150,10 @@ def build_client(cfg, local_tz=None):
         return Eds(identity=cfg.get("identity", ""))
     if backend == "ics":
         return Ics(cfg.get("ics"), identity=cfg.get("identity", ""), local_tz=local_tz)
+    if backend == "caldir":
+        return Caldir(binary=cfg["caldirPath"], pull=bool(cfg.get("caldirPull")))
     raise config_module.ConfigError(
-        "unknown backend %r; expected \"gws\", \"eds\" or \"ics\"" % backend
+        "unknown backend %r; expected \"gws\", \"eds\", \"ics\" or \"caldir\"" % backend
     )
 
 

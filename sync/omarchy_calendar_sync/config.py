@@ -14,7 +14,8 @@ CONFIG_PATH = Path.home() / ".config" / "omarchy" / "calendar-sync.json"
 DEFAULTS = {
     # "gws" reads Google directly and needs a Google Cloud project;
     # "eds" reads Evolution Data Server and needs none; "ics" reads iCal
-    # feeds such as Google's secret address and needs nothing. See the README.
+    # feeds such as Google's secret address and needs nothing; "caldir" reads
+    # the caldir CLI and reuses its sign-in. See the README.
     "backend": "gws",
     # Opt-in. sync/setup --write sets it, together with the calendar.events
     # scope. Off, the sync publishes no writable calendars and the panel
@@ -30,6 +31,11 @@ DEFAULTS = {
     # does not inherit an interactive shell PATH, so relying on the bare
     # name works from a terminal and fails from the timer.
     "gwsPath": "gws",
+    # caldir only. Same PATH caveat as gwsPath.
+    "caldirPath": "caldir",
+    # caldir only: run `caldir pull` before reading. Turn it off when
+    # something else already keeps caldir up to date.
+    "caldirPull": True,
     "calendars": {"include": [], "exclude": []},
     "window": {"pastDays": 7, "futureDays": 60},
 }

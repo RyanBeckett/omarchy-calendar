@@ -6,8 +6,8 @@ form to create or edit events without opening Google.
 
 Not a Google user? The sync reads any iCal feed, see
 [Sync from the secret iCal address](#sync-from-the-secret-ical-address). The
-widget itself reads a plain JSON file, so khal, vdirsyncer or Nextcloud work
-just as well. See [Use another source](#use-another-source).
+widget itself reads a plain JSON file, so caldir, khal, vdirsyncer or Nextcloud work
+just as well. See [Sync from caldir](#sync-from-caldir) and [Use another source](#use-another-source).
 
 ![Preview](preview.png)
 
@@ -325,6 +325,31 @@ backends changes nothing the widget can see.
 
 One known limit: clicking an event opens nothing on this backend, because
 CalDAV does not carry Google's link to the event.
+
+## Sync from caldir
+
+Already using [caldir](https://caldir.org)? It keeps your calendars as plain
+`.ics` files and signs in to Google, iCloud or CalDAV itself, so the sync can
+read from it with no Google Cloud project and no second sign-in. Read only,
+like the iCal address.
+
+```json
+{
+  "backend": "caldir",
+  "calendars": { "include": ["work", "personal"] }
+}
+```
+
+`include` and `exclude` take caldir's calendar slugs (`caldir calendars`) or
+names. Without them you get every calendar caldir syncs, which for a Google
+Workspace account often means coworkers' calendars and meeting rooms too.
+caldir's `default_calendar` counts as your primary one when the same event
+shows up in two calendars.
+
+The sync runs `caldir pull` before reading. If something else already keeps
+caldir up to date, set `"caldirPull": false` and it only reads the local files.
+As with gws, a systemd user service does not see your shell PATH, so when
+caldir lives somewhere unusual set `"caldirPath"` to its absolute path.
 
 ## Use another source
 
