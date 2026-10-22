@@ -29,6 +29,7 @@ Item {
   property string nextDuringEvent: "announce"
   property bool reminders: true
   property bool reminderDetails: false
+  property bool showDate: false
 
   // Calendars
   property var calendars: []
@@ -233,6 +234,7 @@ Item {
         nextDuringEvent: root.nextDuringEvent
         reminders: root.reminders
         reminderDetails: root.reminderDetails
+        showDate: root.showDate
         onPicked: function(values) { root.picked(values) }
       }
 

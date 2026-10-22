@@ -23,6 +23,7 @@
     "defaults": {
       "format": "dddd HH:mm",
       "formatAlt": "d MMMM 'W'ww yyyy",
+      "showDate": false,
       "verticalFormat": "HH\n-\nmm",
       "eventTimeFormat": "HH:mm",
       "language": "auto",
@@ -43,6 +44,13 @@
         "type": "string",
         "label": "Alternate format",
         "defaultValue": "d MMMM 'W'ww yyyy"
+      },
+      {
+        "key": "showDate",
+        "type": "boolean",
+        "label": "Show date",
+        "defaultValue": false,
+        "description": "Puts the day and month next to the time in the bar, like Thursday 22 Oct 16:08."
       },
       {
         "key": "verticalFormat",

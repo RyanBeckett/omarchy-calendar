@@ -20,6 +20,7 @@ Column {
   property string nextDuringEvent: "announce"
   property bool reminders: true
   property bool reminderDetails: false
+  property bool showDate: false
 
   // The settings to store, for example { duringEvent: "firstMinutes" }.
   signal picked(var values)
@@ -112,6 +113,17 @@ Column {
         showsColor: root.faint
       }
     }
+  }
+
+  Gap {}
+
+  ToggleRow {
+    foreground: root.foreground
+    fontFamily: root.fontFamily
+    label: root.tr("settings.showDate")
+    hint: root.tr("settings.showDateHint")
+    checked: root.showDate
+    onActivated: root.pick("showDate", !root.showDate)
   }
 
   Gap {}

@@ -290,6 +290,30 @@ function nextClockFormat(ring, current) {
   return ring[(ring.indexOf(text(current)) + 1) % ring.length]
 }
 
+// The format with the date added, for the "Show date" setting: "d MMM" goes
+// in front of the time, so "dddd HH:mm" reads "Thursday 22 Oct 16:08". A
+// format that already names the day of the month is left alone, and one with
+// no time gets the date at the end. Quoted literals ('W') are skipped over.
+function clockFormatWithDate(format) {
+  var source = text(format)
+  var hourAt = -1
+  for (var i = 0; i < source.length;) {
+    var ch = source.charAt(i)
+    if (ch === "'") {
+      var close = source.indexOf("'", i + 1)
+      i = close === -1 ? source.length : close + 1
+      continue
+    }
+    var run = 1
+    while (source.charAt(i + run) === ch) run++
+    if (ch === "d" && run <= 2) return source
+    if (hourAt === -1 && (ch === "H" || ch === "h")) hourAt = i
+    i += run
+  }
+  if (hourAt === -1) return source === "" ? "d MMM" : source + " d MMM"
+  return source.slice(0, hourAt) + "d MMM " + source.slice(hourAt)
+}
+
 // ---- Month grid
 
 // Always six rows of seven days. A fixed grid keeps the popup exactly the

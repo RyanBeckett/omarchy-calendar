@@ -649,3 +649,22 @@ test('parseLifeExpectancy and parseAge keep their bounds', () => {
   assert.equal(Model.ageFromBirthYear(1979, 2026), 47)
   assert.equal(Model.ageFromBirthYear(2030, 2026), 0)
 })
+
+test('clockFormatWithDate puts the date before the time', () => {
+  assert.strictEqual(Model.clockFormatWithDate('dddd HH:mm'), 'dddd d MMM HH:mm')
+  assert.strictEqual(Model.clockFormatWithDate('h:mm AP'), 'd MMM h:mm AP')
+})
+
+test('clockFormatWithDate leaves a format that already has the day alone', () => {
+  assert.strictEqual(Model.clockFormatWithDate('ddd d MMM HH:mm'), 'ddd d MMM HH:mm')
+  assert.strictEqual(Model.clockFormatWithDate('yyyy-MM-dd HH:mm'), 'yyyy-MM-dd HH:mm')
+})
+
+test('clockFormatWithDate reads weekday names and quoted text as no date', () => {
+  assert.strictEqual(Model.clockFormatWithDate("dddd 'dd' HH:mm"), "dddd 'dd' d MMM HH:mm")
+})
+
+test('clockFormatWithDate appends the date to a format with no time', () => {
+  assert.strictEqual(Model.clockFormatWithDate('dddd'), 'dddd d MMM')
+  assert.strictEqual(Model.clockFormatWithDate(''), 'd MMM')
+})

@@ -31,6 +31,11 @@ BarWidget {
     ? setting("verticalFormatAlt", "dd\nMMM\n'W'ww\n''yy")
     : setting("formatAlt", "d MMMM 'W'ww yyyy")
   readonly property var formatRing: Model.clockFormatRing(configuredFormat, configuredAltFormat, Model.clockFormats(vertical))
+  // "Show date" adds the date in front of the time. Vertical bars have no
+  // room for it, and right click still walks the plain formats.
+  readonly property string labelFormat: !vertical && setting("showDate", false) === true
+    ? Model.clockFormatWithDate(configuredFormat)
+    : configuredFormat
 
   // ---- Events. Read here rather than off the panel so the label and the
   //      reminders keep working whether or not the panel was ever opened.
@@ -89,7 +94,7 @@ BarWidget {
   }
 
   function formatted(date) {
-    return Qt.locale(Strings.localeName(root.language)).toString(date, configuredFormat.replace(/ww/g, Model.isoWeekLiteral(date.getFullYear(), date.getMonth(), date.getDate())))
+    return Qt.locale(Strings.localeName(root.language)).toString(date, labelFormat.replace(/ww/g, Model.isoWeekLiteral(date.getFullYear(), date.getMonth(), date.getDate())))
   }
 
   function join(event) {
